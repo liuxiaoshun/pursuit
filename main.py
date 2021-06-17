@@ -1,6 +1,7 @@
 import numpy as np
 import math
 import matplotlib.pyplot as plt
+import matplotlib.animation as animation
 
 k = 0.1  # 前视距离系数
 Lfc = 2.0  # 前视距离
@@ -8,7 +9,14 @@ Kp = 1.0  # 速度P控制器系数
 dt = 0.1  # 时间间隔，单位：s
 L = 2.9  # 车辆轴距，单位：m
 
-
+fig, ax = plt.subplots()
+ln, = plt.plot([], [], '-b')
+tar, = plt.plot([], [], 'go')
+x = []
+y = []
+target = []
+cx = np.arange(0, 50, 1)
+cy = [math.sin(ix / 5.0) * ix / 2.0 for ix in cx]
 class VehicleState:
 
     def __init__(self, x=0.0, y=0.0, yaw=0.0, v=0.0):
@@ -75,10 +83,26 @@ def pure_pursuit_control(state, cx, cy, pind):
 
     return delta, ind
 
+def init():
+    ax.set_xlim(0, 60)
+    ax.set_ylim(-1, 1)
+    return ln,
+
+
+def update_points(num):
+    '''
+    更新数据点
+    '''
+
+    ln.set_data(x[:num], y[:num])
+    tar.set_data(cx[target[num]], cy[target[num]])
+    # ln.set_data([10,11],[0,1] )
+
+    return ln,tar,
+
 def main():
      #  设置目标路点
-    cx = np.arange(0, 50, 1)
-    cy = [math.sin(ix / 5.0) * ix / 2.0 for ix in cx]
+
 
     target_speed = 10.0 / 3.6  # [m/s]
 
@@ -89,8 +113,7 @@ def main():
 
     lastIndex = len(cx) - 1
     time = 0.0
-    x = [state.x]
-    y = [state.y]
+
     yaw = [state.yaw]
     v = [state.v]
     t = [0.0]
@@ -108,15 +131,19 @@ def main():
         yaw.append(state.yaw)
         v.append(state.v)
         t.append(time)
+        target.append(target_ind)
 
-        plt.cla()
-        plt.plot(cx, cy, ".r", label="course")
-        plt.plot(x, y, "-b", label="trajectory")
-        plt.plot(cx[target_ind], cy[target_ind], "go", label="target")
-        plt.axis("equal")
-        plt.grid(True)
-        plt.title("Speed[km/h]:" + str(state.v * 3.6)[:4])
-        plt.pause(0.001)
+
+    plt.plot(cx, cy, ".r", label="course")
+    plt.axis("equal")
+    plt.grid(True)
+    plt.title("Speed[km/h]:" + str(state.v * 3.6)[:4])
+
+
+
+    ani = animation.FuncAnimation(fig, update_points, frames=np.arange(1, 1000),  interval=100, blit=True)
+    plt.show()
+
 
 
 if __name__ == '__main__':
