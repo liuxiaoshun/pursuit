@@ -2,12 +2,14 @@ import numpy as np
 import math
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
+from matplotlib.pyplot import MultipleLocator
+
 
 k = 0.1  # 前视距离系数
-Lfc = 2.0  # 前视距离
+Lfc = 0.1  # 前视距离
 Kp = 1.0  # 速度P控制器系数
 dt = 0.1  # 时间间隔，单位：s
-L = 2.9  # 车辆轴距，单位：m
+L = 0.5  # 车辆轴距，单位：m
 
 fig, ax = plt.subplots()
 ln, = plt.plot([], [], '-b')
@@ -15,8 +17,18 @@ tar, = plt.plot([], [], 'go')
 x = []
 y = []
 target = []
-cx = np.arange(0, 50, 1)
-cy = [math.sin(ix / 5.0) * ix / 2.0 for ix in cx]
+cx = []
+cy = []
+for i in range(100):
+    cx.append(0.01*i)
+    cy.append(0)
+for i in range(10):
+    cx.append(0.99)
+    cy.append(0.01 + 0.01*i)
+for i in range(100):
+    cx.append(0.98-0.01*i)
+    cy.append(0.1)
+
 class VehicleState:
 
     def __init__(self, x=0.0, y=0.0, yaw=0.0, v=0.0):
@@ -84,8 +96,11 @@ def pure_pursuit_control(state, cx, cy, pind):
     return delta, ind
 
 def init():
-    ax.set_xlim(0, 60)
-    ax.set_ylim(-1, 1)
+    ax.set_xlim(0, 1.1)
+    ax.set_ylim(-0.05, 0.15)
+
+
+    plt.axis('equal')
     return ln,
 
 
@@ -93,7 +108,7 @@ def update_points(num):
     '''
     更新数据点
     '''
-
+    ax.figure.canvas.draw()
     ln.set_data(x[:num], y[:num])
     tar.set_data(cx[target[num]], cy[target[num]])
     # ln.set_data([10,11],[0,1] )
@@ -104,12 +119,12 @@ def main():
      #  设置目标路点
 
 
-    target_speed = 10.0 / 3.6  # [m/s]
+    target_speed = 0.1  # [m/s]
 
     T = 100.0  # 最大模拟时间
 
     # 设置车辆的出事状态
-    state = VehicleState(x=-0.0, y=-3.0, yaw=0.0, v=0.0)
+    state = VehicleState(x=0.0, y=0.0 , yaw=0.52, v=0.0)
 
     lastIndex = len(cx) - 1
     time = 0.0
@@ -119,7 +134,7 @@ def main():
     t = [0.0]
     target_ind = calc_target_index(state, cx, cy)
 
-    while T >= time and lastIndex > target_ind:
+    while time <= T and target_ind < lastIndex:
         ai = PControl(target_speed, state.v)
         di, target_ind = pure_pursuit_control(state, cx, cy, target_ind)
         state = update(state, ai, di)
@@ -134,14 +149,13 @@ def main():
         target.append(target_ind)
 
 
-    plt.plot(cx, cy, ".r", label="course")
-    plt.axis("equal")
-    plt.grid(True)
-    plt.title("Speed[km/h]:" + str(state.v * 3.6)[:4])
+    plt.plot(cx, cy, ".r")
+
+    # plt.grid(True)
 
 
 
-    ani = animation.FuncAnimation(fig, update_points, frames=np.arange(1, 1000),  interval=100, blit=True)
+    ani = animation.FuncAnimation(fig, update_points, frames=np.arange(1, 1000), init_func=init, interval=100, blit=True)
     plt.show()
 
 
