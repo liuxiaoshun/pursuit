@@ -10,6 +10,7 @@ Lfc = 0.1  # 前视距离
 Kp = 1.0  # 速度P控制器系数
 dt = 0.1  # 时间间隔，单位：s
 L = 0.5  # 车辆轴距，单位：m
+wmax = 
 
 fig, ax = plt.subplots()
 ln, = plt.plot([], [], '-b')
