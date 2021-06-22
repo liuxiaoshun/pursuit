@@ -108,7 +108,7 @@ def update_points(num):
     '''
     更新数据点
     '''
-    ax.figure.canvas.draw()
+    # ax.figure.canvas.draw()
     ln.set_data(x[:num], y[:num])
     tar.set_data(cx[target[num]], cy[target[num]])
     # ln.set_data([10,11],[0,1] )
