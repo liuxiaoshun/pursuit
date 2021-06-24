@@ -4,29 +4,40 @@ import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 from matplotlib.pyplot import MultipleLocator
 from pylab import *
+import random
 
 
 
 k = 0.1  # 前视距离系数
-Lfc = 0.03  # 前视距离
+Lfc = 0.05  # 前视距离
 Kp = 1.0  # 速度P控制器系数
 dt = 0.05  # 时间间隔，单位：s
 L = 0.5  # 车辆轴距，单位：m
 wmax = 2.0 #4.4 舵轮最大角速度
 target_speed = 0.1  # 移动速度[m/s]
 watch = False#True False
-filename = 'Lfc0_3.mp4'
+filename = 'Lfc0_5_noise_hf.mp4'
+e = 10 #每秒偏移误差幅值  cm/s
+a = 200000/e
 
-fig, ax = plt.subplots()
-ln, = plt.plot([], [], '-b',linewidth=2.5)
-tar, = plt.plot([], [], 'go')
-lyaw, = plt.plot([], [], 'go')
+fig = plt.figure()
+trackpath = fig.add_subplot(2,1,1)
+noise = fig.add_subplot(2,1,2)
+
+
+ln, = trackpath.plot([], [], '-b',linewidth=2.5)
+tar, = trackpath.plot([], [], 'go')
+noise_t, = noise.plot([], [], '-b')
+# lyaw, = plt.plot([], [], 'go')
 x = []
 y = []
 target = []
 cx = []
 cy = []
 cyaw = []
+noise_datax = []
+noise_datay = []
+
 
 
 for i in range(50):
@@ -117,11 +128,16 @@ def pure_pursuit_control(state, cx, cy, pind):
     return alpha, ind
 
 def init():
-    ax.set_xlim(0, 1.1)
-    ax.set_ylim(-3.14, 3.14)
+    # ax.set_xlim(0, 1.1)
+    # ax.set_ylim(-3.14, 3.14)
 
 
-    plt.axis('equal')
+    trackpath.axis('equal')
+    noise.set_ylim(-10, 10)
+    noise.set_xlim(0, 15)
+    trackpath.grid(True)
+    noise.grid(True)
+
     return ln,
 
 tt = []
@@ -129,21 +145,21 @@ def update_points(num):
     '''
     更新数据点
     '''
-    tt.append(num*0.01)
-    ax.figure.canvas.draw()
+
+    trackpath.figure.canvas.draw()
+    noise.figure.canvas.draw()
     ln.set_data(x[:num], y[:num])
     tar.set_data(cx[target[num]], cy[target[num]])
+    temp = [2000*i for i in noise_datax[:num]]
+    noise_t.set_data(tt[:num], temp)
     # lyaw.set_data(num*0.001,cyaw[num])
     # ln.set_data([10,11],[0,1] )
 
-    return ln,tar,
+    return ln,tar,noise_t,
 
 def main():
      #  设置目标路点
-
-
-
-
+    global x,y
     T = 100.0  # 最大模拟时间
 
     # 设置车辆的出事状态
@@ -161,9 +177,13 @@ def main():
         ai = PControl(target_speed, state.v)
         di, target_ind = pure_pursuit_control(state, cx, cy, target_ind)
         state = update(state, ai, di)
+        noise_datax.append(random.randint(-100,100)/a)
+        noise_datay.append(random.randint(-100,100)/a)
+        state.y+=noise_datay[-1]
+        state.x += noise_datax[-1]
 
         time = time + dt
-
+        tt.append(time)
         x.append(state.x)
         y.append(state.y)
         yaw.append(state.yaw)
@@ -173,13 +193,10 @@ def main():
         target.append(target_ind)
 
 
-    plt.plot(cx, cy, ".r")
+    trackpath.plot(cx, cy, ".r")
 
     # plt.grid(True)
-
-
-
-    ani = animation.FuncAnimation(fig, update_points, frames=np.arange(1, 1000), init_func=init, interval=50, blit=True)
+    ani = animation.FuncAnimation(fig, update_points, frames=np.arange(1, 290), init_func=init, interval=50, blit=True)
     if watch:
          plt.show()
     else:

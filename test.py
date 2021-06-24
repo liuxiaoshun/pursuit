@@ -1,53 +1,39 @@
-"""
-=====
-Decay
-=====
-
-This example showcases:
-- using a generator to drive an animation,
-- changing axes limits during an animation.
-"""
-
-import itertools
-
 import numpy as np
+import math
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
+from matplotlib.pyplot import MultipleLocator
+from pylab import *
 
+colors=['blue', 'red', 'black', 'blue', 'purple']
+subplot_list = [1,3,2,2,6]
+leng = len(subplot_list)
+ax, bars = list(), list()
 
-def data_gen():
-    for cnt in itertools.count():
-        t = cnt / 10
-        yield t, np.sin(2*np.pi*t) * np.exp(-t/10.)
+def barlistdef(n): 
+    return [1/float(n*k) for k in range(1,6)]
 
+fig = plt.figure()
+n = 20  # Number of frames
+x = range(1,6)
+for i in range(leng):
+    if leng == 1:
+        axis = fig.add_subplot(leng, 1, (i+1))
+    elif leng > 1:
+        if leng%2 == 0:
+            axis = fig.add_subplot(leng/2, 2, (i+1))
+        else:
+            axis = fig.add_subplot(int(leng/2+0.5), 2, (i+1))
+    ax.append(axis)
+    barcollection = ax[i].bar(x,barlistdef(1), color=colors[i])
+    bars.append(barcollection)
 
-def init():
-    ax.set_ylim(-1.1, 1.1)
-    ax.set_xlim(0, 10)
-    del xdata[:]
-    del ydata[:]
-    line.set_data(xdata, ydata)
-    return line,
+def animate(i):
+    y = barlistdef(i+1)
+    for j in range(len(bars)):
+        for k, bar in enumerate(bars[j]):
+            bar.set_height(y[k])
+    return barcollection
 
-fig, ax = plt.subplots()
-line, = ax.plot([], [], lw=2)
-ax.grid()
-xdata, ydata = [], []
-
-
-def run(data):
-    # update the data
-    t, y = data
-    xdata.append(t)
-    ydata.append(y)
-    xmin, xmax = ax.get_xlim()
-
-    if t >= xmax:
-        ax.set_xlim(xmin, 2*xmax)
-        ax.figure.canvas.draw()
-    line.set_data(xdata, ydata)
-
-    return line,
-
-ani = animation.FuncAnimation(fig, run, data_gen, interval=10, init_func=init)
+ani = animation.FuncAnimation(fig, animate, interval=75, frames=n, blit=False, repeat=True)
 plt.show()
