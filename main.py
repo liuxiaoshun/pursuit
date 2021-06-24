@@ -3,17 +3,22 @@ import math
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 from matplotlib.pyplot import MultipleLocator
+from pylab import *
+
 
 
 k = 0.1  # 前视距离系数
-Lfc = 0.1  # 前视距离
+Lfc = 0.03  # 前视距离
 Kp = 1.0  # 速度P控制器系数
-dt = 0.1  # 时间间隔，单位：s
+dt = 0.05  # 时间间隔，单位：s
 L = 0.5  # 车辆轴距，单位：m
 wmax = 2.0 #4.4 舵轮最大角速度
+target_speed = 0.1  # 移动速度[m/s]
+watch = False#True False
+filename = 'Lfc0_3.mp4'
 
 fig, ax = plt.subplots()
-ln, = plt.plot([], [], '-b')
+ln, = plt.plot([], [], '-b',linewidth=2.5)
 tar, = plt.plot([], [], 'go')
 lyaw, = plt.plot([], [], 'go')
 x = []
@@ -27,12 +32,12 @@ cyaw = []
 for i in range(50):
     cx.append(0.01*i)
     cy.append(0)
-for i in range(10):
+for i in range(50):
     cx.append(0.49)
     cy.append(0.01 + 0.01*i)
 for i in range(50):
     cx.append(0.48-0.01*i)
-    cy.append(0.1)
+    cy.append(0.5)
 
 class VehicleState:
 
@@ -68,13 +73,13 @@ def calc_target_index(state, cx, cy):
     dy = [state.y - icy for icy in cy]
     d = [abs(math.sqrt(idx ** 2 + idy ** 2)) for (idx, idy) in zip(dx, dy)]
     ind = d.index(min(d))
-    L = 0.0
+    L = d[ind]
 
     Lf = k * state.v + Lfc
 
-    while Lf > L and (ind + 1) < len(cx):
+    while L < Lf and (ind + 1) < len(cx):
         dx = cx[ind + 1] - cx[ind]
-        dy = cx[ind + 1] - cx[ind]
+        dy = cy[ind + 1] - cy[ind]
         L += math.sqrt(dx ** 2 + dy ** 2)
         ind += 1
 
@@ -137,7 +142,7 @@ def main():
      #  设置目标路点
 
 
-    target_speed = 0.1  # [m/s]
+
 
     T = 100.0  # 最大模拟时间
 
@@ -174,8 +179,15 @@ def main():
 
 
 
-    ani = animation.FuncAnimation(fig, update_points, frames=np.arange(1, 1000), init_func=init, interval=100, blit=True)
-    plt.show()
+    ani = animation.FuncAnimation(fig, update_points, frames=np.arange(1, 1000), init_func=init, interval=50, blit=True)
+    if watch:
+         plt.show()
+    else:
+        try:
+            ani.save(filename,writer='ffmpeg')
+        except:
+            print('mp4 done')
+
 
 
 
