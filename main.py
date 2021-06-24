@@ -10,24 +10,28 @@ Lfc = 0.1  # 前视距离
 Kp = 1.0  # 速度P控制器系数
 dt = 0.1  # 时间间隔，单位：s
 L = 0.5  # 车辆轴距，单位：m
-wmax = 
+wmax = 2.0 #4.4 舵轮最大角速度
 
 fig, ax = plt.subplots()
 ln, = plt.plot([], [], '-b')
 tar, = plt.plot([], [], 'go')
+lyaw, = plt.plot([], [], 'go')
 x = []
 y = []
 target = []
 cx = []
 cy = []
-for i in range(100):
+cyaw = []
+
+
+for i in range(50):
     cx.append(0.01*i)
     cy.append(0)
 for i in range(10):
-    cx.append(0.99)
+    cx.append(0.49)
     cy.append(0.01 + 0.01*i)
-for i in range(100):
-    cx.append(0.98-0.01*i)
+for i in range(50):
+    cx.append(0.48-0.01*i)
     cy.append(0.1)
 
 class VehicleState:
@@ -39,10 +43,21 @@ class VehicleState:
         self.v = v
 
 def update(state, a, delta):
-
+    dth=0
     state.x = state.x + state.v * math.cos(state.yaw) * dt
     state.y = state.y + state.v * math.sin(state.yaw) * dt
-    state.yaw = state.yaw + state.v / L * math.tan(delta) * dt
+    if(delta-state.yaw>3.14):
+        dth = delta-state.yaw - 2*math.pi
+    elif(delta-state.yaw<-3.14):
+        dth = delta - state.yaw + 2 * math.pi
+    if(math.fabs(dth)<wmax*dt):
+        state.yaw = delta
+    else:
+        if dth > 0:
+            state.yaw += dt*wmax
+        else:
+            state.yaw -= dt*wmax
+    # state.yaw = delta
     state.v = state.v + a * dt
 
     return state
@@ -85,33 +100,35 @@ def pure_pursuit_control(state, cx, cy, pind):
         ty = cy[-1]
         ind = len(cx) - 1
 
-    alpha = math.atan2(ty - state.y, tx - state.x) - state.yaw
+    alpha = math.atan2(ty - state.y, tx - state.x)
 
     if state.v < 0:  # back
         alpha = math.pi - alpha
 
     Lf = k * state.v + Lfc
 
-    delta = math.atan2(2.0 * L * math.sin(alpha) / Lf, 1.0)
+    # delta = math.atan2(2.0 * L * math.sin(alpha) / Lf, 1.0)
 
-    return delta, ind
+    return alpha, ind
 
 def init():
     ax.set_xlim(0, 1.1)
-    ax.set_ylim(-0.05, 0.15)
+    ax.set_ylim(-3.14, 3.14)
 
 
     plt.axis('equal')
     return ln,
 
-
+tt = []
 def update_points(num):
     '''
     更新数据点
     '''
+    tt.append(num*0.01)
     ax.figure.canvas.draw()
     ln.set_data(x[:num], y[:num])
     tar.set_data(cx[target[num]], cy[target[num]])
+    # lyaw.set_data(num*0.001,cyaw[num])
     # ln.set_data([10,11],[0,1] )
 
     return ln,tar,
@@ -147,6 +164,7 @@ def main():
         yaw.append(state.yaw)
         v.append(state.v)
         t.append(time)
+        cyaw.append(state.yaw)
         target.append(target_ind)
 
 
